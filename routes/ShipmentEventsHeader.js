@@ -8,8 +8,12 @@ const router = express.Router();
  * GET /api/tracking-header/:foId
  * Returns header info for one FoId
  */
-router.get("/shipment-tracking", async (req, res) => {
-  const { foId } = req.params;
+router.get("/shipment-tracking-data", async (req, res) => {
+  const { foId } = req.query;   // ✅ FIX
+
+  if (!foId) {
+    return res.status(400).json({ error: "foId is required" });
+  }
 
   try {
     const pool = await getPool();
@@ -27,5 +31,6 @@ router.get("/shipment-tracking", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch tracking header" });
   }
 });
+
 
 export default router;
