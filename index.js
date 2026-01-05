@@ -26,10 +26,12 @@ const PORT = process.env.PORT || 8080;
 /* -------------------- MIDDLEWARE -------------------- */
 app.use(cors({
   origin: [
-    "https://gentle-glacier-0aa062d03.4.azurestaticapps.net"
+    "https://gentle-glacier-0aa062d03.4.azurestaticapps.net",
+    "http://localhost:5173"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 app.use(express.json());    // ✅ REQUIRED
 
