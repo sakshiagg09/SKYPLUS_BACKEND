@@ -23,24 +23,9 @@ const PORT = process.env.PORT || 8080;
 // routes here
 //export default router;
 
-
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = [
-      "https://gentle-glacier-0aa062d03.4.azurestaticapps.net"
-    ];
-
-    // Allow Azure internal & server-side calls
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
+/* -------------------- MIDDLEWARE -------------------- */
+app.use(cors());            // ✅ THIS IS ENOUGH
+app.use(express.json());    // ✅ REQUIRED
 
 // VERY IMPORTANT
 app.use(cors());
