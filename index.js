@@ -27,12 +27,6 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());            // ✅ THIS IS ENOUGH
 app.use(express.json());    // ✅ REQUIRED
 
-// VERY IMPORTANT
-app.use(cors());
-
-// IMPORTANT: handle preflight
-
-app.use(express.json());
 
 /* -------------------- API ROUTES -------------------- */
 app.use("/api/", shipmentEventsRoutes);
