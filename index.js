@@ -43,8 +43,7 @@ app.use(cors({
 }));
 
 // VERY IMPORTANT
-app.options('/*', cors());
-
+app.use(cors());
 
 // IMPORTANT: handle preflight
 
