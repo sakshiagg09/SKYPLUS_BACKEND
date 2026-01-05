@@ -8,7 +8,7 @@ const router = express.Router();
  * GET /api/tracking-header/:foId
  * Returns header info for one FoId
  */
-router.get("/shipment-tracking-data", async (req, res) => {
+router.get("/shipment-tracking", async (req, res) => {
   const { foId } = req.params;
 
   try {
