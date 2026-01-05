@@ -27,7 +27,9 @@ const PORT = process.env.PORT || 8080;
 app.use(cors({
   origin: [
     "https://gentle-glacier-0aa062d03.4.azurestaticapps.net",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:4004",
+    "http://localhost:5001"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
