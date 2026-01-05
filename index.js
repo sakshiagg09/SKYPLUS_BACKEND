@@ -24,7 +24,13 @@ const PORT = process.env.PORT || 8080;
 //export default router;
 
 /* -------------------- MIDDLEWARE -------------------- */
-app.use(cors());            // ✅ THIS IS ENOUGH
+app.use(cors({
+  origin: [
+    "https://gentle-glacier-0aa062d03.4.azurestaticapps.net"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());    // ✅ REQUIRED
 
 
@@ -41,13 +47,7 @@ app.use("/api/", tmSyncRoutes);
 app.use("/api", trackingRoutes);
 app.use("/api", skyRoutes);
 
-app.use(cors({
-  origin: [
-    "https://gentle-glacier-0aa062d03.4.azurestaticapps.net"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/api/health", (_req, res) => {
   res.json({ status: "Backend is running 🚀" });
