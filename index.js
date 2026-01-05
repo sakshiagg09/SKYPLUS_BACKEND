@@ -40,6 +40,14 @@ app.use("/api/", tmSyncRoutes);
 //app.use("/api", tmSyncRoutes);
 app.use("/api", trackingRoutes);
 app.use("/api", skyRoutes);
+
+app.use(cors({
+  origin: [
+    "https://gentle-glacier-0aa062d03.4.azurestaticapps.net"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/api/health", (_req, res) => {
   res.json({ status: "Backend is running 🚀" });
