@@ -1,6 +1,7 @@
 import sql from "mssql";
 import { getPool } from "../config/db.js";
-
+import { fetchEventsReportingSet } from "./tm.service.js";
+import { parseSapEvent } from "./tmParser.service.js";
 function etaStringToDate(eta) {
   if (!eta) return null;
 
@@ -53,4 +54,72 @@ export async function saveSkyEvent(data) {
       VALUES
       (@FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode, @Description, @ETA, @Discrepency, @Items)
     `);
+}
+
+
+export async function syncAndGetEventsByFoId(foId) {
+  const pool = await getPool();
+
+  // 1️⃣ Fetch latest events from TM
+  const sapEvents = await fetchEventsReportingSet(foId);
+
+  // 2️⃣ Save events safely (NO DUPLICATES)
+  for (const ev of sapEvents) {
+    const e = parseSapEvent(ev);
+
+    await pool.request()
+      .input("FoId", sql.NVarChar, e.FoId)
+      .input("StopId", sql.NVarChar, e.StopId)
+      .input("Event", sql.NVarChar, e.Event)
+      .input("Action", sql.NVarChar, e.Action)
+      .input("EventCode", sql.NVarChar, e.EventCode)
+      .input("EvtReasonCode", sql.NVarChar, e.EvtReasonCode)
+      .input("Description", sql.NVarChar, e.Description)
+      .input("ETA", sql.DateTime2, e.ETA)
+      .input("Discrepency", sql.NVarChar, e.Discrepency)
+      .input("Items", sql.NVarChar(sql.MAX), e.Items)
+      .input("ActualReportedTime", sql.DateTime, e.ActualReportedTime)
+      .input("PlannedTime", sql.DateTime, e.PlannedTime)
+      .input("Latitude", sql.Decimal(18, 10), e.Latitude)
+      .input("Longitude", sql.Decimal(18, 10), e.Longitude)
+      .query(`
+        MERGE dbo.Events AS T
+        USING (
+          SELECT
+            @FoId FoId,
+            @StopId StopId,
+            @Event Event,
+            @ActualReportedTime ActualReportedTime
+        ) AS S
+        ON T.FoId = S.FoId
+        AND T.StopId = S.StopId
+        AND T.Event = S.Event
+        AND T.ActualReportedTime = S.ActualReportedTime
+        WHEN NOT MATCHED THEN
+          INSERT (
+            FoId, StopId, Event, Action, EventCode, EvtReasonCode,
+            Description, ETA, Discrepency, Items,
+            CreatedAt, ActualReportedTime, PlannedTime,
+            Latitude, Longitude
+          )
+          VALUES (
+            @FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode,
+            @Description, @ETA, @Discrepency, @Items,
+            SYSDATETIME(), @ActualReportedTime, @PlannedTime,
+            @Latitude, @Longitude
+          );
+      `);
+  }
+
+  // 3️⃣ Return events FROM DB (single source for UI)
+  const result = await pool.request()
+    .input("FoId", sql.NVarChar, foId)
+    .query(`
+      SELECT *
+      FROM dbo.Events
+      WHERE FoId = @FoId
+      ORDER BY ActualReportedTime
+    `);
+
+  return result.recordset;
 }

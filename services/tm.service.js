@@ -60,7 +60,19 @@ async function fetchCsrf() {
       .join("; ")
   };
 }
+export async function fetchEventsReportingSet(foId) {
+  const url =
+    `${SAP_BASE}/EventsReportingSet?$filter=FoId eq '${foId}'&$format=json`;
 
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Basic ${process.env.SAP_BASIC}`,
+      Accept: "application/json"
+    }
+  });
+
+  return response.data?.d?.results || [];
+}
 /* ================= EVENT → TM ================= */
 
 export async function postEventToTM(payload) {

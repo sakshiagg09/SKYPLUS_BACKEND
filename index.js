@@ -6,7 +6,7 @@ import { connectDB } from "./config/db.js";
 import "./jobs/tmSync.job.js";
 import trackingRoutes from "./routes/trackingdata.js";
 import skyRoutes from "./routes/sky.routes.js";
-
+import eventsRoutes from "./routes/Events.js";
 // 🔹 Import route files (one per table)
 import shipmentEventsRoutes from "./routes/shipmentEvents.js";
 import trackingDataRoutes from "./routes/trackingdata.js";
@@ -41,7 +41,7 @@ app.use(express.json());    // ✅ REQUIRED
 /* -------------------- API ROUTES -------------------- */
 app.use("/api/", shipmentEventsRoutes);
 app.use("/api/", trackingHeaderRoutes);
-
+app.use("/api/events", eventsRoutes);
 app.use("/api/", trackingDataRoutes);
 app.use("/api/", uiFieldConfigRoutes);
 app.use("/api/", Events);
