@@ -1,12 +1,13 @@
+//backend/controllers/sky.controller.js
 import { saveSkyEvent } from "../services/events.service.js";
 import { postDelayToTM, postPODToTM } from "../services/tm.service.js";
 import { postEventToTM } from "../services/tm.service.js";
 
 export async function receiveEvent(req, res) {
   try {
-    const { FoId, Action } = req.body;
-    if (!FoId || !Action) {
-      return res.status(400).json({ error: "FoId & Action required" });
+    const { FoId, Action,StopId,Longitude,Latitude } = req.body;
+    if (!FoId || !Action || !StopId) {
+      return res.status(400).json({ error: "FoId & Action & StopId required" });
     }
 
     await saveSkyEvent(req.body);

@@ -1,3 +1,4 @@
+//backend/services/tm.service.js
 import axios from "axios";
 
 const SAP_BASE = process.env.SAP_BASE_URL;
@@ -5,34 +6,6 @@ const SAP_CLIENT = process.env.SAP_CLIENT || "";
 
 
 /* ---------------- Helper ---------------- */
-function parseEtaToDate(eta) {
-  if (!eta || !/^\d{14}$/.test(eta)) return null;
-
-  const yyyy = Number(eta.slice(0, 4));
-  const MM   = Number(eta.slice(4, 6)) - 1;
-  const dd   = Number(eta.slice(6, 8));
-  const HH   = Number(eta.slice(8, 10));
-  const mm   = Number(eta.slice(10, 12));
-  const ss   = Number(eta.slice(12, 14));
-
-  const d = new Date(Date.UTC(yyyy, MM, dd, HH, mm, ss));
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function toIsoDateTime(eta) {
-  if (!eta || !/^\d{14}$/.test(eta)) {
-    throw new Error("Invalid ETA format. Expected YYYYMMDDHHMMSS");
-  }
-
-  const yyyy = eta.slice(0, 4);
-  const MM   = eta.slice(4, 6);
-  const dd   = eta.slice(6, 8);
-  const HH   = eta.slice(8, 10);
-  const mm   = eta.slice(10, 12);
-  const ss   = eta.slice(12, 14);
-
-  return `${yyyy}-${MM}-${dd}T${HH}:${mm}:${ss}`;
-}
 
 function unwrapOData(data) {
   if (data?.d) return data.d;
@@ -76,9 +49,9 @@ export async function fetchEventsReportingSet(foId) {
 /* ================= EVENT → TM ================= */
 
 export async function postEventToTM(payload) {
-  const { FoId, Action, StopId } = payload;
+  const { FoId, Action, StopId, Latitude, Longitude } = payload;
 
-  if (!FoId || !Action) {
+  if (!FoId || !Action || !StopId ) {
     throw new Error("FoId & Action required for TM Event");
   }
 
@@ -87,7 +60,9 @@ export async function postEventToTM(payload) {
   const tmPayload = {
     FoId: String(FoId).trim(),
     Action: String(Action).trim(),
-    StopId: String(StopId ?? "").trim()
+    StopId: String(StopId ?? "").trim(),
+    Latitude:Latitude,
+    Longitude:Longitude
   };
 
   const url =

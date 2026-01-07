@@ -39,6 +39,8 @@ export async function saveSkyEvent(data) {
 
   await pool.request()
     .input("FoId", sql.NVarChar, data.FoId)
+    .input("Latitude", sql.Decimal(18, 10), data.Latitude ?? null)
+    .input("Longitude", sql.Decimal(18, 10), data.Longitude ?? null)
     .input("StopId", sql.NVarChar, data.StopId ?? null)
     .input("Event", sql.NVarChar, data.Event ?? null)
     .input("Action", sql.NVarChar, data.Action ?? null)
@@ -50,9 +52,9 @@ export async function saveSkyEvent(data) {
     .input("Items", sql.NVarChar(sql.MAX), data.Items ?? null)
     .query(`
       INSERT INTO Events
-      (FoId, StopId, Event, Action, EventCode, EvtReasonCode, Description, ETA, Discrepency, Items)
+      (FoId, StopId, Event, Action, EventCode, EvtReasonCode, Description, ETA, Discrepency, Items,Latitude,Longitude)
       VALUES
-      (@FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode, @Description, @ETA, @Discrepency, @Items)
+      (@FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode, @Description, @ETA, @Discrepency, @Items,@Latitude,@Longitude)
     `);
 }
 

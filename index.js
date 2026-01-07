@@ -1,4 +1,4 @@
-//index.js  
+//backend/index.js  
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
