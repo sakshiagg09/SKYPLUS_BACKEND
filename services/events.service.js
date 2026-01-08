@@ -66,8 +66,11 @@ export async function syncAndGetEventsByFoId(foId) {
   const sapEvents = await fetchEventsReportingSet(foId);
   console.log("sapEvents recieved:",sapEvents);
 
+
   // 2️⃣ Save events safely (NO DUPLICATES)
   for (const ev of sapEvents) {
+      console.log("keys:", Object.keys(ev));
+console.log("Timestamp:", ev.Timestamp);
     const e = parseSapEvent(ev);
 
     await pool.request()
