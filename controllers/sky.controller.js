@@ -50,14 +50,13 @@ await saveSkyEvent({
   EventCode: payload.EventCode,
   EvtReasonCode: payload.EvtReasonCode,
   Description: payload.Description,
-  ETA: payload.ETA    // ✅ THIS WAS MISSING
+  ETA: payload.ETA,
+  Longitude: payload.Longitude,
+  Latitude: payload.Latitude
 });
 
 
-    res.json({
-      success: true,
-      message: "Delay sent to TM and saved in SQL"
-    });
+    res.json(payload);
 
   } catch (err) {
     console.error("Delay error:", err.message);
