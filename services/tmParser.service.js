@@ -36,8 +36,9 @@ export function parseSapEvent(ev) {
     Discrepency: ev.Discrepency ?? null,
     Items: ev.Items ? JSON.stringify(ev.Items) : null,
     ActualReportedTime: sapTimestampToDate(ev.Timestamp),
-    PlannedTime: sapTimestampToDate(ev.PlannedTime),
+    PlannedTime: sapTimestampToDate(ev.PlanTimestamp),
     Latitude: ev.Latitude ? Number(ev.Latitude) : null,
-    Longitude: ev.Longitude ? Number(ev.Longitude) : null
+    Longitude: ev.Longitude ? Number(ev.Longitude) : null,
+    Location: ev.Location
   };
 }

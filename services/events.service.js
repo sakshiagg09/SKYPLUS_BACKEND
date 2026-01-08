@@ -88,6 +88,7 @@ console.log("Timestamp:", ev.Timestamp);
       .input("PlannedTime", sql.DateTime, e.PlannedTime)
       .input("Latitude", sql.Decimal(18, 10), e.Latitude)
       .input("Longitude", sql.Decimal(18, 10), e.Longitude)
+      .input("Location", sql.NVarChar, e.Location)
       .query(`
         MERGE dbo.Events AS T
         USING (
@@ -106,13 +107,13 @@ console.log("Timestamp:", ev.Timestamp);
             FoId, StopId, Event, Action, EventCode, EvtReasonCode,
             Description, ETA, Discrepency, Items,
             CreatedAt, ActualReportedTime, PlannedTime,
-            Latitude, Longitude
+            Latitude, Longitude, Location
           )
           VALUES (
             @FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode,
             @Description, @ETA, @Discrepency, @Items,
             SYSDATETIME(), @ActualReportedTime, @PlannedTime,
-            @Latitude, @Longitude
+            @Latitude, @Longitude, @Location
           );
       `);
   }
