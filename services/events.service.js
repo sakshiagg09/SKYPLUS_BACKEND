@@ -80,6 +80,7 @@ export async function syncAndGetEventsByFoId(foId) {
       .input("ETA", sql.DateTime2, e.ETA)
       .input("Discrepency", sql.NVarChar, e.Discrepency)
       .input("Items", sql.NVarChar(sql.MAX), e.Items)
+      .input("ActualReportedTime", sql.DateTime, e.ActualReportedTime)
       .input("PlannedTime", sql.DateTime, e.PlannedTime)
       .input("Latitude", sql.Decimal(18, 10), e.Latitude)
       .input("Longitude", sql.Decimal(18, 10), e.Longitude)
@@ -90,21 +91,23 @@ export async function syncAndGetEventsByFoId(foId) {
             @FoId FoId,
             @StopId StopId,
             @Event Event,
+            @ActualReportedTime ActualReportedTime
         ) AS S
         ON T.FoId = S.FoId
         AND T.StopId = S.StopId
         AND T.Event = S.Event
+        AND T.ActualReportedTime = S.ActualReportedTime
         WHEN NOT MATCHED THEN
           INSERT (
             FoId, StopId, Event, Action, EventCode, EvtReasonCode,
             Description, ETA, Discrepency, Items,
-            CreatedAt, PlannedTime,
+            CreatedAt, ActualReportedTime, PlannedTime,
             Latitude, Longitude
           )
           VALUES (
             @FoId, @StopId, @Event, @Action, @EventCode, @EvtReasonCode,
             @Description, @ETA, @Discrepency, @Items,
-            SYSDATETIME(), @PlannedTime,
+            SYSDATETIME(), @ActualReportedTime, @PlannedTime,
             @Latitude, @Longitude
           );
       `);
@@ -117,7 +120,7 @@ export async function syncAndGetEventsByFoId(foId) {
       SELECT *
       FROM dbo.Events
       WHERE FoId = @FoId
-      ORDER BY CreatedAt 
+      ORDER BY ActualReportedTime
     `);
 
   return result.recordset;
