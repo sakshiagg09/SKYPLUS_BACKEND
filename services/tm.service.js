@@ -105,7 +105,9 @@ export async function postDelayToTM(payload) {
     RefEvent: String(payload.RefEvent ?? "").trim(),
     EventCode: String(payload.EventCode ?? "").trim(),
     EvtReasonCode: String(payload.EvtReasonCode ?? "").trim(),
-    Description: String(payload.Description ?? "").trim()
+    Description: String(payload.Description ?? "").trim(),
+    Latitude:String(payload.Latitude),
+    Longitude:String(payload.Longitude )
   };
 
   const url =
@@ -133,7 +135,7 @@ export async function postDelayToTM(payload) {
 
 
 export async function postPODToTM(payload) {
-  const { FoId, StopId, Discrepency, Items } = payload;
+  const { FoId, StopId, Discrepency, Items ,Latitude, Longitude } = payload;
 
   if (!FoId || !StopId) {
     throw new Error("FoId & StopId required for POD");
@@ -145,7 +147,9 @@ export async function postPODToTM(payload) {
     FoId: String(FoId).trim(),
     StopId: String(StopId).trim(),
     Discrepency: String(Discrepency ?? "").trim(),
-    Items: String(Items ?? "").trim()
+    Items: String(Items ?? "").trim(),
+    Latitude:String(Latitude),
+    Longitude:String(Longitude)
   };
 
   console.log("FINAL POD PAYLOAD >>>", tmPayload); // debug once
