@@ -7,7 +7,12 @@ export function parseFinalInfo(finalInfo) {
     return [];
   }
 }
+function normalizeFoId(foId) {
+  if (!foId) return foId;
 
+  // remove leading zeros only
+  return foId.replace(/^0+/, "");
+}
 export function sapTimestampToDate(s) {
   console.log("ts received from SAP:", s);
     if (!s || s === "0") return null;     
@@ -20,7 +25,7 @@ export function sapTimestampToDate(s) {
 
 export function parseSapEvent(ev) {
   return {
-    FoId: ev.FoId,
+    FoId: normalizeFoId(ev.FoId),
     StopId: ev.StopId,
     Event: ev.Event,
     Action: ev.Action,

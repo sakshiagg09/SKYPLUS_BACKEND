@@ -14,43 +14,6 @@ function mapRowToGraph(row) {
   };
 }
 
-async function getShipments(req, res) {
-  try {
-    const pool = await connectDB();
-    const top = Number(req.query.top || 200);
-    const sanitizedTop = Number.isFinite(top) && top > 0 && top <= 1000 ? top : 200;
-
-    const result = await pool
-      .request()
-      .query(`SELECT TOP (${sanitizedTop}) * FROM Shipments ORDER BY CreatedAt DESC`);
-
-    const rows = result.recordset?.map(mapRowToGraph) ?? [];
-    return res.json(rows);
-  } catch (err) {
-    console.error("[getShipments] DB error:", err);
-    return res.status(500).json({ error: err.message });
-  }
-}
-
-async function getShipment(req, res) {
-  try {
-    const container = req.query.container;
-    if (!container) return res.status(400).json({ error: "container query param required" });
-
-    const pool = await connectDB();
-    const result = await pool
-      .request()
-      .input("container", sql.VarChar, container)
-      .query("SELECT TOP (1) * FROM Shipments WHERE ContainerNumber = @container");
-
-    if (!result.recordset?.length) return res.status(404).json({ error: "Not found" });
-    return res.json(result.recordset[0]);
-  } catch (err) {
-    console.error("[getShipment] DB error:", err);
-    return res.status(500).json({ error: err.message });
-  }
-}
-
 async function getShipmentEvents(req, res) {
   try {
     const container = req.query.container;
@@ -83,8 +46,6 @@ async function getUiFieldConfig(_req, res) {
 }
 
 module.exports = {
-  getShipments,
-  getShipment,
   getShipmentEvents,
   getUiFieldConfig,
 };
