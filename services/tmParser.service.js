@@ -8,17 +8,14 @@ export function parseFinalInfo(finalInfo) {
   }
 }
 
-export function sapTimestampToDate(ts) {
-  console.log("ts received from SAP:", ts);
-  if (!ts) return null;
-  console.log( "new date. craeted from SAP ts", new Date(
-    `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}T` +
-    `${ts.slice(8, 10)}:${ts.slice(10, 12)}:${ts.slice(12, 14)}`
-  ));
-  // return new Date(
-  //   `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}T` +
-  //   `${ts.slice(8, 10)}:${ts.slice(10, 12)}:${ts.slice(12, 14)}`
-  // );
+export function sapTimestampToDate(s) {
+  console.log("ts received from SAP:", s);
+    if (!s || s === "0") return null;     
+  const ts = String(s).trim();
+   return new Date(
+     `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}T` +
+     `${ts.slice(8, 10)}:${ts.slice(10, 12)}:${ts.slice(12, 14)}`
+   );
 }
 
 export function parseSapEvent(ev) {
