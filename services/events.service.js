@@ -64,6 +64,7 @@ export async function syncAndGetEventsByFoId(foId) {
 
   // 1️⃣ Fetch latest events from TM
   const sapEvents = await fetchEventsReportingSet(foId);
+  console.log("sapEvents recieved:",sapEvents);
 
   // 2️⃣ Save events safely (NO DUPLICATES)
   for (const ev of sapEvents) {
