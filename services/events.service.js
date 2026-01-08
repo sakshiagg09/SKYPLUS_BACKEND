@@ -69,8 +69,8 @@ export async function syncAndGetEventsByFoId(foId) {
 
   // 2️⃣ Save events safely (NO DUPLICATES)
   for (const ev of sapEvents) {
-      console.log("keys:", Object.keys(ev));
-console.log("Timestamp:", ev.Timestamp);
+    console.log("keys:", Object.keys(ev));
+    console.log("Timestamp:", ev.Timestamp);
     const e = parseSapEvent(ev);
 
     await pool.request()
@@ -94,12 +94,12 @@ console.log("Timestamp:", ev.Timestamp);
         USING (
           SELECT
             @FoId FoId,
-            @StopId StopId,
+            @Location Location,
             @Event Event,
             @ActualReportedTime ActualReportedTime
         ) AS S
         ON T.FoId = S.FoId
-        AND T.StopId = S.StopId
+        AND T.Location = S.Location
         AND T.Event = S.Event
         AND T.ActualReportedTime = S.ActualReportedTime
         WHEN NOT MATCHED THEN
