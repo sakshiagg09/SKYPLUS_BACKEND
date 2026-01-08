@@ -9,6 +9,7 @@ export function parseFinalInfo(finalInfo) {
 }
 
 export function sapTimestampToDate(ts) {
+  console.log("ts:", ts);
   if (!ts) return null;
   ts = "20260105142744"
   console.log( new Date(
