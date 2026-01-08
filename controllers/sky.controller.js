@@ -80,3 +80,19 @@ export async function receivePOD(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function recieveUnloading(req, res) {
+  try {
+    const { FoId, StopId, Latitude, Longitude } = req.body;
+    if (!FoId || !StopId) {
+      return res.status(400).json({ error: "FoId & StopId required" });
+    }
+    
+    await saveSkyEvent(req.body);
+    const tmRes = await postUnloadingToTM(req.body);
+    res.json(tmRes);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

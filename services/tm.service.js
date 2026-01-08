@@ -176,3 +176,47 @@ export async function postPODToTM(payload) {
 
   return result.data;
 }
+
+export async function postUnloadingToTM(payload) {
+  const { FoId, StopId, Latitude, Longitude } = payload;
+
+  if (!FoId || !StopId) {
+    throw new Error("FoId & StopId required for Unloading");
+  }
+
+  const { token, cookie } = await fetchCsrf();
+
+  const tmPayload = {
+    FoId: String(FoId).trim(),
+    StopId: String(StopId).trim(),
+    Latitude:String(Latitude),
+    Longitude:String(Longitude)
+  };
+
+  console.log("FINAL UNLOADING PAYLOAD >>>", tmPayload); // debug once
+
+  const result = await axios.post(
+    `${SAP_BASE}/UnloadingSet${SAP_CLIENT ? `?sap-client=${SAP_CLIENT}` : ""}`,
+    tmPayload,
+    {
+      headers: {
+        Authorization: `Basic ${process.env.SAP_BASIC}`,
+        "x-csrf-token": token,
+        Cookie: cookie,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      validateStatus: () => true
+    }
+  );
+
+  if (result.status >= 400) {
+    throw new Error(`TM UNLOADING failed: ${JSON.stringify(result.data)}`);
+  }
+
+  return result.data;
+}
+
+
+
