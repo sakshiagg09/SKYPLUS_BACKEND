@@ -10,7 +10,7 @@ export async function receiveEvent(req, res) {
       return res.status(400).json({ error: "FoId & Action & StopId required" });
     }
 
-    await saveSkyEvent(req.body);
+    //await saveSkyEvent(req.body);
     const tmRes = await postEventToTM(req.body);
     res.json(tmRes);
 
@@ -43,7 +43,7 @@ export async function receiveDelay(req, res) {
     const { etaDate } = await postDelayToTM(payload);
 
     // 2️⃣ Save to SQL
-await saveSkyEvent({
+/*await saveSkyEvent({
   FoId: payload.FoId,
   StopId: payload.StopId,
   Event: payload.RefEvent ?? "DELAY",
@@ -53,7 +53,7 @@ await saveSkyEvent({
   ETA: payload.ETA,
   Longitude: payload.Longitude,
   Latitude: payload.Latitude
-});
+});*/
 
 
     res.json(payload);
@@ -72,7 +72,7 @@ export async function receivePOD(req, res) {
       return res.status(400).json({ error: "FoId & StopId required" });
     }
 
-    await saveSkyEvent(req.body);
+    //await saveSkyEvent(req.body);
     const tmRes = await postPODToTM(req.body);
     res.json(tmRes);
 
@@ -88,7 +88,7 @@ export async function recieveUnloading(req, res) {
       return res.status(400).json({ error: "FoId & StopId required" });
     }
 
-    await saveSkyEvent(req.body);
+    //await saveSkyEvent(req.body);
     const tmRes = await postUnloadingToTM(req.body);
     res.json(tmRes);
 
