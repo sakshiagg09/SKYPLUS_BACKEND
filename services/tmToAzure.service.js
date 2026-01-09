@@ -44,11 +44,14 @@ export async function syncTMToAzure() {
 for (const fo of fos) {
   const sky = await fetchSkyPlusByFoId(fo.FoId);
 
-  const events = parseFinalInfo(fo.FinalInfo);
-  if (!events.length) continue;
+const events = parseFinalInfo(fo.FinalInfo);
 
-    const lastEvent = events[events.length - 1];
-    const status = deriveStatus(events);
+const lastEvent = events.length
+  ? events[events.length - 1]
+  : {};
+
+const status = deriveStatus(events);
+
 
     await pool.request()
       .input("FoId", sql.NVarChar, fo.FoId)
@@ -87,8 +90,9 @@ for (const fo of fos) {
 
       .query(`
         MERGE dbo.FreightOrderDetails T
-        USING (SELECT @FoId FoId, @StopId StopId) S
-        ON T.FoId = S.FoId 
+USING (SELECT @FoId FoId) S
+ON T.FoId = S.FoId
+
         WHEN MATCHED THEN
           UPDATE SET
             StopSeqPos=@StopSeqPos,
