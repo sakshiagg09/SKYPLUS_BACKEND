@@ -5,6 +5,8 @@ import { parseFinalInfo, sapTimestampToDate } from "./tmParser.service.js";
 
 const SAP_BASE = process.env.SAP_BASE_URL;
 
+/* ------------------ Helpers ------------------ */
+
 function deriveStatus(events = []) {
   if (!events.length) return "Planned";
   const last = events[events.length - 1];
@@ -12,23 +14,19 @@ function deriveStatus(events = []) {
   return "In Transit";
 }
 
-async function fetchSkyPlusByFoId(foId) {
-  const url = `${SAP_BASE}/SkyPlusFieldsSet?$filter=FoId eq '${foId}'&$format=json`;
-
-  const res = await axios.get(url, {
-    headers: {
-      Authorization: `Basic ${process.env.SAP_BASIC}`,
-      Accept: "application/json"
-    }
-  });
-
-  return res.data?.d?.results?.[0] || null;
-}
+/* ------------------ MAIN SYNC ------------------ */
 
 export async function syncTMToAzure() {
   const pool = await getPool();
+  let count = 0;
 
-  const res = await axios.get(
+  /* =========================================================
+     STEP 1: SEARCHFOSET → MASTER DATA (INSERT / UPDATE)
+     ========================================================= */
+
+  console.log("🚀 STEP 1: Syncing SearchFOSet (TM → Azure)");
+
+  const tmRes = await axios.get(
     `${SAP_BASE}/SearchFOSet?$format=json`,
     {
       headers: {
@@ -38,123 +36,147 @@ export async function syncTMToAzure() {
     }
   );
 
-  const fos = res.data?.d?.results ?? [];
-  let count = 0;
+  const fos = tmRes.data?.d?.results ?? [];
 
-for (const fo of fos) {
-  const sky = await fetchSkyPlusByFoId(fo.FoId);
+  for (const fo of fos) {
+    const events = parseFinalInfo(fo.FinalInfo);
 
-const events = parseFinalInfo(fo.FinalInfo);
+    const lastEvent = events.length
+      ? events[events.length - 1]
+      : { stopid: "UNKNOWN" };
 
-const lastEvent = events.length
-  ? events[events.length - 1]
-  : {};
+    const status = deriveStatus(events);
 
-const status = deriveStatus(events);
+    try {
+      await pool.request()
+        .input("FoId", sql.NVarChar, fo.FoId)
+        .input("StopId", sql.NVarChar, lastEvent.stopid || "UNKNOWN")
+        .input("StopSeqPos", sql.Char, lastEvent.stopseqpos ?? null)
+        .input("Event", sql.NVarChar, lastEvent.event ?? null)
+        .input("LocationType", sql.NVarChar, lastEvent.typeLoc ?? null)
+        .input("LocId", sql.NVarChar, lastEvent.locid ?? null)
+        .input("LocationName", sql.NVarChar, lastEvent.name1 ?? null)
+        .input("Street", sql.NVarChar, lastEvent.street ?? null)
+        .input("PostalCode", sql.NVarChar, lastEvent.postCode1 ?? null)
+        .input("City", sql.NVarChar, lastEvent.city1 ?? null)
+        .input("Region", sql.NVarChar, lastEvent.region ?? null)
+        .input("Country", sql.NVarChar, lastEvent.country ?? null)
+        .input("Latitude", sql.Decimal(18, 10), lastEvent.latitude ?? null)
+        .input("Longitude", sql.Decimal(18, 10), lastEvent.longitude ?? null)
+        .input("EventTime", sql.DateTime, new Date())
+        .input("LicenseNumber", sql.NVarChar, fo.LicenseNumber ?? null)
+        .input("Status", sql.NVarChar, status)
+        .input("LastEvent", sql.NVarChar, lastEvent.event ?? null)
+        .input("LastEventCity", sql.NVarChar, lastEvent.city1 ?? null)
+        .query(`
+          MERGE dbo.FreightOrderDetails T
+          USING (SELECT @FoId FoId) S
+          ON T.FoId = S.FoId
+          WHEN MATCHED THEN
+            UPDATE SET
+              StopId=@StopId,
+              StopSeqPos=@StopSeqPos,
+              Event=@Event,
+              LocationType=@LocationType,
+              LocId=@LocId,
+              LocationName=@LocationName,
+              Street=@Street,
+              PostalCode=@PostalCode,
+              City=@City,
+              Region=@Region,
+              Country=@Country,
+              Latitude=@Latitude,
+              Longitude=@Longitude,
+              EventTime=@EventTime,
+              LicenseNumber=@LicenseNumber,
+              Status=@Status,
+              LastEvent=@LastEvent,
+              LastEventCity=@LastEventCity,
+              LastUpdated=GETDATE()
+          WHEN NOT MATCHED THEN
+            INSERT (
+              FoId, StopId, StopSeqPos, Event, LocationType, LocId,
+              LocationName, Street, PostalCode, City, Region, Country,
+              Latitude, Longitude, EventTime, LicenseNumber,
+              Status, LastEvent, LastEventCity, LastUpdated
+            )
+            VALUES (
+              @FoId, @StopId, @StopSeqPos, @Event, @LocationType, @LocId,
+              @LocationName, @Street, @PostalCode, @City, @Region, @Country,
+              @Latitude, @Longitude, @EventTime, @LicenseNumber,
+              @Status, @LastEvent, @LastEventCity, GETDATE()
+            );
+        `);
 
+      count++;
+    } catch (err) {
+      console.error("❌ TM sync failed for FoId:", fo.FoId);
+      console.error(err.message);
+    }
+  }
 
-    await pool.request()
-      .input("FoId", sql.NVarChar, fo.FoId)
-      .input("StopId", sql.NVarChar, lastEvent.stopid)
-      .input("StopSeqPos", sql.Char, lastEvent.stopseqpos)
-      .input("Event", sql.NVarChar, lastEvent.event)
-      .input("LocationType", sql.NVarChar, lastEvent.typeLoc)
-      .input("LocId", sql.NVarChar, lastEvent.locid)
-      .input("LocationName", sql.NVarChar, lastEvent.name1)
-      .input("Street", sql.NVarChar, lastEvent.street)
-      .input("PostalCode", sql.NVarChar, lastEvent.postCode1)
-      .input("City", sql.NVarChar, lastEvent.city1)
-      .input("Region", sql.NVarChar, lastEvent.region)
-      .input("Country", sql.NVarChar, lastEvent.country)
-      .input("Latitude", sql.Decimal(18, 10), lastEvent.latitude)
-      .input("Longitude", sql.Decimal(18, 10), lastEvent.longitude)
-      .input("EventTime", sql.DateTime, new Date())
-      .input("LicenseNumber", sql.NVarChar, fo.LicenseNumber)
-      .input("Status", sql.NVarChar, status)
-      .input("LastEvent", sql.NVarChar, lastEvent.event)
-      .input("LastEventCity", sql.NVarChar, lastEvent.city1)
-      .input("CargoQuantity", sql.Decimal(18,3), sky?.CargoQuantity ?? null)
-.input("CargoVolume", sql.Decimal(18,3), sky?.CargoVolume ?? null)
-.input("CargoWeight", sql.Decimal(18,3), sky?.CargoWeight ?? null)
-.input("QuantityUom", sql.NVarChar, sky?.QuantityUom ?? null)
-.input("VolumeUom", sql.NVarChar, sky?.VolumeUom ?? null)
-.input("WeightUom", sql.NVarChar, sky?.WeightUom ?? null)
-.input("DepartureCountry", sql.NVarChar, sky?.DepartureCountry ?? null)
-.input("ExecutionStatus", sql.NVarChar, sky?.ExecutionStatus ?? null)
-.input("PlannedArrivalAt", sql.DateTime, sapTimestampToDate(sky?.PlannedArrivalAt))
-.input("PlannedArrivalId", sql.NVarChar, sky?.PlannedArrivalId ?? null)
-.input("PlannedDepartureAt", sql.DateTime, sapTimestampToDate(sky?.PlannedDepartureAt))
-.input("PlannedDepartureId", sql.NVarChar, sky?.PlannedDepartureId ?? null)
-.input("PlannedTotalDistance", sql.Decimal(18,3), sky?.PlannedTotalDistance ?? null)
-.input("PlannedTotalUom", sql.NVarChar, sky?.PlannedTotalUom ?? null)
+  /* =========================================================
+     STEP 2: SKYPLUSFIELDSSET → ENRICHMENT (UPDATE ONLY)
+     ========================================================= */
 
-      .query(`
-        MERGE dbo.FreightOrderDetails T
-USING (SELECT @FoId FoId) S
-ON T.FoId = S.FoId
+  console.log("☁️ STEP 2: Syncing SkyPlusFieldsSet (UPDATE ONLY)");
 
-        WHEN MATCHED THEN
-          UPDATE SET
-            StopSeqPos=@StopSeqPos,
-            Event=@Event,
-            LocationType=@LocationType,
-            LocId=@LocId,
-            LocationName=@LocationName,
-            Street=@Street,
-            PostalCode=@PostalCode,
-            City=@City,
-            Region=@Region,
-            Country=@Country,
-            Latitude=@Latitude,
-            Longitude=@Longitude,
-            EventTime=@EventTime,
-            LicenseNumber=@LicenseNumber,
-            Status=@Status,
-            LastEvent=@LastEvent,
-LastEventCity=@LastEventCity,
-CargoQuantity=@CargoQuantity,
-CargoVolume=@CargoVolume,
-CargoWeight=@CargoWeight,
-QuantityUom=@QuantityUom,
-VolumeUom=@VolumeUom,
-WeightUom=@WeightUom,
-DepartureCountry=@DepartureCountry,
-ExecutionStatus=@ExecutionStatus,
-PlannedArrivalAt=@PlannedArrivalAt,
-PlannedArrivalId=@PlannedArrivalId,
-PlannedDepartureAt=@PlannedDepartureAt,
-PlannedDepartureId=@PlannedDepartureId,
-PlannedTotalDistance=@PlannedTotalDistance,
-PlannedTotalUom=@PlannedTotalUom,
-LastUpdated=GETDATE()
+  try {
+    const skyRes = await axios.get(
+      `${SAP_BASE}/SkyPlusFieldsSet?$format=json`,
+      {
+        headers: {
+          Authorization: `Basic ${process.env.SAP_BASIC}`,
+          Accept: "application/json"
+        }
+      }
+    );
 
-        WHEN NOT MATCHED THEN
-          INSERT (
-            FoId, StopId, StopSeqPos, Event, LocationType, LocId,
-            LocationName, Street, PostalCode, City, Region, Country,
-            Latitude, Longitude, EventTime, LicenseNumber,
-            Status, LastEvent, LastEventCity,CargoQuantity, CargoVolume, CargoWeight,
-QuantityUom, VolumeUom, WeightUom,
-DepartureCountry, ExecutionStatus,
-PlannedArrivalAt, PlannedArrivalId,
-PlannedDepartureAt, PlannedDepartureId,
-PlannedTotalDistance, PlannedTotalUom, LastUpdated
-          )
-          VALUES (
-            @FoId, @StopId, @StopSeqPos, @Event, @LocationType, @LocId,
-            @LocationName, @Street, @PostalCode, @City, @Region, @Country,
-            @Latitude, @Longitude, @EventTime, @LicenseNumber,
-            @Status, @LastEvent, @LastEventCity,
-@CargoQuantity, @CargoVolume, @CargoWeight,
-@QuantityUom, @VolumeUom, @WeightUom,
-@DepartureCountry, @ExecutionStatus,
-@PlannedArrivalAt, @PlannedArrivalId,
-@PlannedDepartureAt, @PlannedDepartureId,
-@PlannedTotalDistance, @PlannedTotalUom, GETDATE()
-          );
-      `);
+    const skyList = skyRes.data?.d?.results ?? [];
 
-    count++;
+    for (const sky of skyList) {
+      if (!sky.FoId) continue;
+
+      await pool.request()
+        .input("FoId", sql.NVarChar, sky.FoId)
+        .input("CargoQuantity", sql.Decimal(18,3), sky.CargoQuantity ?? null)
+        .input("CargoVolume", sql.Decimal(18,3), sky.CargoVolume ?? null)
+        .input("CargoWeight", sql.Decimal(18,3), sky.CargoWeight ?? null)
+        .input("QuantityUom", sql.NVarChar, sky.QuantityUom ?? null)
+        .input("VolumeUom", sql.NVarChar, sky.VolumeUom ?? null)
+        .input("WeightUom", sql.NVarChar, sky.WeightUom ?? null)
+        .input("DepartureCountry", sql.NVarChar, sky.DepartureCountry ?? null)
+        .input("ExecutionStatus", sql.NVarChar, sky.ExecutionStatus ?? null)
+        .input("PlannedArrivalAt", sql.DateTime, sapTimestampToDate(sky.PlannedArrivalAt))
+        .input("PlannedArrivalId", sql.NVarChar, sky.PlannedArrivalId ?? null)
+        .input("PlannedDepartureAt", sql.DateTime, sapTimestampToDate(sky.PlannedDepartureAt))
+        .input("PlannedDepartureId", sql.NVarChar, sky.PlannedDepartureId ?? null)
+        .input("PlannedTotalDistance", sql.Decimal(18,3), sky.PlannedTotalDistance ?? null)
+        .input("PlannedTotalUom", sql.NVarChar, sky.PlannedTotalUom ?? null)
+        .query(`
+          UPDATE dbo.FreightOrderDetails
+          SET
+            CargoQuantity=@CargoQuantity,
+            CargoVolume=@CargoVolume,
+            CargoWeight=@CargoWeight,
+            QuantityUom=@QuantityUom,
+            VolumeUom=@VolumeUom,
+            WeightUom=@WeightUom,
+            DepartureCountry=@DepartureCountry,
+            ExecutionStatus=@ExecutionStatus,
+            PlannedArrivalAt=@PlannedArrivalAt,
+            PlannedArrivalId=@PlannedArrivalId,
+            PlannedDepartureAt=@PlannedDepartureAt,
+            PlannedDepartureId=@PlannedDepartureId,
+            PlannedTotalDistance=@PlannedTotalDistance,
+            PlannedTotalUom=@PlannedTotalUom,
+            LastUpdated=GETDATE()
+          WHERE FoId=@FoId
+        `);
+    }
+  } catch (err) {
+    console.error("⚠️ SkyPlus sync failed (TM already synced)");
+    console.error(err.message);
   }
 
   return { success: true, count };
