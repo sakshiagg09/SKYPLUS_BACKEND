@@ -178,7 +178,7 @@ export async function postPODToTM(payload) {
 }
 
 export async function postUnloadingToTM(payload) {
-  const { FoId, StopId} = payload;
+  const { FoId, StopId, Latitude, Longitude } = payload;
 
   if (!FoId || !StopId) {
     throw new Error("FoId & StopId required for Unloading");
@@ -188,7 +188,9 @@ export async function postUnloadingToTM(payload) {
 
   const tmPayload = {
     FoId: String(FoId).trim(),
-    StopId: String(StopId).trim()
+    StopId: String(StopId).trim(),
+    Latitude:String(Latitude),
+    Longitude:String(Longitude)
   };
 
   console.log("FINAL UNLOADING PAYLOAD >>>", tmPayload); // debug once
