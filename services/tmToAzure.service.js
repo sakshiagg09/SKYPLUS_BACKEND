@@ -133,18 +133,24 @@ export async function syncTMToAzure() {
 export async function updateSkyByFoId(foId) {
   const pool = await getPool();
 
-  const normalizedFoId = String(foId).replace(/^0+/, "");
-  console.log("☁️ On-demand SKY update for FoId:", normalizedFoId);
+const normalizedFoId = normalizeFoId(foId);
 
-  const res = await axios.get(
-    `${SAP_BASE}/SkyPlusFieldsSet?$filter=FoId eq '${foId}'&$format=json`,
-    {
-      headers: {
-        Authorization: `Basic ${process.env.SAP_BASIC}`,
-        Accept: "application/json"
-      }
+// 🔁 SAP needs padded FoId
+const sapFoId = String(foId).padStart(22, "0");
+
+console.log("☁️ SKY SAP FoId:", sapFoId);
+console.log("🔧 SKY SQL FoId:", normalizedFoId);
+
+const res = await axios.get(
+  `${SAP_BASE}/SkyPlusFieldsSet?$filter=FoId eq '${sapFoId}'&$format=json`,
+  {
+    headers: {
+      Authorization: `Basic ${process.env.SAP_BASIC}`,
+      Accept: "application/json"
     }
-  );
+  }
+);
+
 
   const sky = res.data?.d?.results?.[0];
 
