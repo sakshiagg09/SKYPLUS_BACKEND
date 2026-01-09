@@ -2,7 +2,7 @@
 import { saveSkyEvent } from "../services/events.service.js";
 import { postDelayToTM, postPODToTM,postUnloadingToTM } from "../services/tm.service.js";
 import { postEventToTM } from "../services/tm.service.js";
-
+import { updateSkyByFoId } from "../services/tmToAzure.service.js";
 export async function receiveEvent(req, res) {
   try {
     const { FoId, Action,StopId,Longitude,Latitude } = req.body;
@@ -94,5 +94,26 @@ export async function recieveUnloading(req, res) {
 
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+}
+
+export async function updateSkyForFo(req, res) {
+  try {
+    const { foId } = req.params;
+
+    if (!foId) {
+      return res.status(400).json({ message: "FoId is required" });
+    }
+
+    const result = await updateSkyByFoId(foId);
+
+    return res.json({
+      success: true,
+      foId,
+      updated: result.updated
+    });
+  } catch (err) {
+    console.error("Sky update failed:", err.message);
+    return res.status(500).json({ error: err.message });
   }
 }
