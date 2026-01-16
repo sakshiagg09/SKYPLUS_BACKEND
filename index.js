@@ -36,6 +36,9 @@ app.use(express.json());    // ✅ REQUIRED
 
 
 /* -------------------- API ROUTES -------------------- */
+app.get("/",(req,res)=>{
+  res.send("API is working");
+})
 app.use("/api/", shipmentEventsRoutes);
 app.use("/api/", trackingHeaderRoutes);
 app.use("/api/events", eventsRoutes);
